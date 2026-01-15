@@ -5,4 +5,4 @@ out/
 .vscode/
 .DS_Store
 .env
-.bat
+*.bat
