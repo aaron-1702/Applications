@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+out/
+.vscode/
+.DS_Store
+.env
+.bat
