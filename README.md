@@ -1,1 +1,1 @@
-Destop Electro Applications
+Destop Applications using Electron
