@@ -72,6 +72,16 @@ function createTaskElement(task, insertAtTop) {
   checkbox.addEventListener("change", () => {
     task.completed = checkbox.checked;
     li.classList.toggle("completed", task.completed);
+    
+    // NEU: Sortierung im DOM
+    if (task.completed) {
+      // Wenn erledigt -> Ans Ende der Liste schieben
+      list.appendChild(li);
+    } else {
+      // Wenn wieder offen -> An den Anfang der Liste schieben
+      list.insertBefore(li, list.firstChild);
+    }
+    
     saveToStorage();
   });
 
@@ -199,6 +209,11 @@ function loadTasks() {
   if (saved) {
     try {
       allTasks = JSON.parse(saved);
+
+      // NEU: Sortieren -> Erst offene (false=0), dann erledigte (true=1)
+      allTasks.sort((a, b) => a.completed - b.completed);
+
+      // Rendern (false bedeutet hier: hinten anhängen)
       allTasks.forEach(t => createTaskElement(t, false));
     } catch (e) {
       console.error("Fehler beim Laden:", e);
