@@ -221,3 +221,15 @@ function loadTasks() {
     }
   }
 }
+
+const { ipcRenderer } = require('electron');
+const closeBtn = document.getElementById("closeAppBtn");
+
+if (closeBtn) {
+  closeBtn.addEventListener("click", () => {
+    // Sendet Nachricht an main.js
+    ipcRenderer.send("close-app");
+  });
+}
+
+
