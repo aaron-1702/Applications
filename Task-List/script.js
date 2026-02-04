@@ -31,7 +31,8 @@ function addNewTask() {
     text: text,
     duration: duration,
     deadline: deadline,
-    completed: false
+    completed: false,
+    subTasks: []
   };
 
   allTasks.unshift(newTask);
@@ -50,66 +51,131 @@ function createTaskElement(task, insertAtTop) {
   const li = document.createElement("li");
   li.dataset.id = task.id;
 
+  // --- Checkbox & Label (wie bisher) ---
   const label = document.createElement("label");
   label.className = "custom-checkbox";
-  
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = task.completed;
-  
   const checkmark = document.createElement("span");
   checkmark.className = "checkmark";
-  
   label.appendChild(checkbox);
   label.appendChild(checkmark);
 
+  // --- Haupt-Container ---
   const contentDiv = document.createElement("div");
   contentDiv.className = "task-content";
-  contentDiv.title = "Doppelklick zum Bearbeiten";
-  
-  renderTaskContent(contentDiv, task);
 
+  // 1. Haupt-Text Bereich
+  const mainInfoDiv = document.createElement("div");
+  mainInfoDiv.className = "main-info";
+  mainInfoDiv.title = "Doppelklick zum Bearbeiten";
+  renderTaskContent(mainInfoDiv, task); // Nutzt die alte Funktion für Text/Meta
+
+  // 2. Unterpunkte Container (NEU)
+  const subTaskContainer = document.createElement("div");
+  subTaskContainer.className = "subtask-container";
+  
+  const subTaskList = document.createElement("ul");
+  subTaskList.className = "subtask-list";
+
+  const subTaskInput = document.createElement("input");
+  subTaskInput.type = "text";
+  subTaskInput.className = "subtask-input";
+  subTaskInput.placeholder = "+ Unterpunkt hinzufügen (Enter)";
+
+  // Funktion zum Rendern der Unterpunkte
+  const renderSubTasks = () => {
+    subTaskList.innerHTML = "";
+    if(!task.subTasks) task.subTasks = []; // Fallback für alte Tasks
+
+    task.subTasks.forEach((sub, index) => {
+      const subItem = document.createElement("li");
+      subItem.className = sub.completed ? "sub-completed" : "";
+      
+      subItem.innerHTML = `
+        <span class="sub-check">${sub.completed ? "☑" : "☐"}</span>
+        <span class="sub-text">${sub.text}</span>
+        <span class="sub-del">×</span>
+      `;
+
+      // Klick auf Checkbox/Text toggelt Status
+      subItem.querySelector(".sub-check").addEventListener("click", (e) => {
+          e.stopPropagation();
+          sub.completed = !sub.completed;
+          saveToStorage();
+          renderSubTasks();
+      });
+
+      // Klick auf X löscht Unterpunkt
+      subItem.querySelector(".sub-del").addEventListener("click", (e) => {
+          e.stopPropagation();
+          task.subTasks.splice(index, 1);
+          saveToStorage();
+          renderSubTasks();
+      });
+
+      subTaskList.appendChild(subItem);
+    });
+  };
+
+  // Initiales Rendern der Unterpunkte
+  renderSubTasks();
+
+  // Neuer Unterpunkt bei Enter
+  subTaskInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter" && subTaskInput.value.trim()) {
+      task.subTasks.push({
+        text: subTaskInput.value.trim(),
+        completed: false
+      });
+      saveToStorage();
+      renderSubTasks();
+      subTaskInput.value = "";
+    }
+  });
+
+  // Zusammenbauen
+  subTaskContainer.appendChild(subTaskList);
+  subTaskContainer.appendChild(subTaskInput);
+
+  contentDiv.appendChild(mainInfoDiv);
+  contentDiv.appendChild(subTaskContainer);
+
+  // --- Event Listeners (Haupt-Task) ---
   checkbox.addEventListener("change", () => {
     task.completed = checkbox.checked;
     li.classList.toggle("completed", task.completed);
     
-    // NEU: Sortierung im DOM
+    // Sortierung (wie im vorigen Schritt besprochen)
     if (task.completed) {
-      // Wenn erledigt -> Ans Ende der Liste schieben
-      list.appendChild(li);
+       list.appendChild(li);
     } else {
-      // Wenn wieder offen -> An den Anfang der Liste schieben
-      list.insertBefore(li, list.firstChild);
+       list.insertBefore(li, list.firstChild);
     }
-    
     saveToStorage();
   });
 
   if (task.completed) li.classList.add("completed");
 
-  contentDiv.addEventListener("dblclick", () => {
-    enableEditMode(li, task, contentDiv);
+  // Edit Mode nur aktivieren, wenn man auf den oberen Teil klickt
+  mainInfoDiv.addEventListener("dblclick", () => {
+    enableEditMode(li, task, mainInfoDiv);
   });
 
+  // Kontextmenü (Löschen)
   li.addEventListener("contextmenu", (e) => {
     e.preventDefault();
-    
     if (e.shiftKey) {
       li.remove();
-      
       allTasks = allTasks.filter(t => t.id !== task.id);
-      
       saveToStorage();
-      
-      inputTask.focus();
     } else {
-      const originalPlaceholder = inputTask.placeholder;
-      inputTask.value = "";
-      inputTask.placeholder = "Hold SHIFT + Right Click to delete!";
-      
-      setTimeout(() => {
-        inputTask.placeholder = originalPlaceholder;
-      }, 2000);
+      // Kleiner visueller Hinweis im Input Feld oben
+      const originalPh = document.getElementById("taskInput").placeholder;
+      document.getElementById("taskInput").value = "";
+      document.getElementById("taskInput").placeholder = "Hold SHIFT + Right Click to delete!";
+      setTimeout(() => document.getElementById("taskInput").placeholder = originalPh, 2000);
     }
   });
 
