@@ -82,7 +82,7 @@ function createTaskElement(task, insertAtTop) {
   const subTaskInput = document.createElement("input");
   subTaskInput.type = "text";
   subTaskInput.className = "subtask-input";
-  subTaskInput.placeholder = "+ Unterpunkt hinzufügen (Enter)";
+  subTaskInput.placeholder = "+ Unterpunkt hinzufügen";
 
   // Funktion zum Rendern der Unterpunkte
   const renderSubTasks = () => {
